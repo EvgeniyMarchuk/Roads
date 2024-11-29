@@ -11,17 +11,12 @@ width = 30
 n += width * 2
 
 # Генерация стартовых точек
-p_start_up = (0, random.randint(0, n - 1))
-p_start_l = (random.randint(0, (n - 1) // 2), 0)
-p_start_r = (random.randint(0, (n - 1) // 2), n - 1)
+p_start_up = (0, random.randint(width, n - width - 1))
+p_start_l = (random.randint(width, (n - width - 1) // 2), 0)
+p_start_r = (random.randint(width, (n - width - 1) // 2), n - 1)
 
 p_start = random.choice([p_start_up, p_start_l, p_start_r])
-# p_start
 p_end = (n - 1, random.randint(0, n - 1))
-
-
-
-
 
 
 # Создание карты
@@ -81,8 +76,8 @@ def bezier_curve(p0, p1, p2, p3, num_points=2*n):
     return np.array([x, y, dy_dx])
 
 # Генерация случайных контрольных точек
-control_point_1 = (random.randint(0, n // 2), random.randint(0, n - 1))
-control_point_2 = (random.randint(n // 2, n - 1), random.randint(0, n - 1))
+control_point_1 = (random.randint(width, n // 2), random.randint(width, n - width - 1))
+control_point_2 = (random.randint(n // 2, n - width - 1), random.randint(width, n - width - 1))
 
 # Построение кривой Безье
 bezier_path = bezier_curve(p_start, control_point_1, control_point_2, p_end)
@@ -93,14 +88,13 @@ def draw_road(map, path, width=5):
     for x, y, _ in zip(*path):
         x, y = int(round(x)), int(round(y))
         mask = get_circle_mask(width)
-        # mask[max(0, width - x):min(mask.shape[0], map.shape[0] - x + width), max(0,y-width): min(mask.shape[1], map.shape[1] - y + width)]
         map[max(0,x-width):min(map.shape[0],x+width), max(0,y-width): min(map.shape[1], y+width)] = \
             (map[max(0,x-width):min(map.shape[0],x+width), max(0,y-width): min(map.shape[1], y+width)] + mask[max(0, width - x):min(mask.shape[0], map.shape[0] - x + width), max(0,width-y): min(mask.shape[1], map.shape[1] - y + width)] > 0).astype("int")
     map *= 255
     map[path[0].astype('int'), path[1].astype('int')] = 128
-    plt.imshow(map, cmap='gray')
-    plt.title("Дорога с кривой Безье")
-    plt.savefig("без_обр.png")
+    # plt.imshow(map, cmap='gray')
+    # plt.title("Дорога с кривой Безье")
+    # plt.show()
     # Обрезка краёв
     return map[width : n - width, width : n - width]
     
@@ -108,14 +102,34 @@ def draw_road(map, path, width=5):
 # Рисуем дорогу
 res = draw_road(map, bezier_path, width)
 
-# bezier_path[:][-3:]
+
 # перепутали оси когда заполняли map
-condition = np.argmin(np.abs(bezier_path[0] - 511 - width))
-x_end = bezier_path[1][condition] - width
-y_end = bezier_path[0][condition] - width
+condition = np.argmin(np.abs(bezier_path[0] - n + 1 + width))
+x_end = np.round(bezier_path[1][condition] - width)
+y_end = np.round(bezier_path[0][condition] - width)
+
+index = np.argmin((np.min(np.abs(bezier_path[0] - width)),
+                  np.min(np.abs(bezier_path[1] - width)),
+                  np.min(np.abs(bezier_path[1] - n + 1 + width)))
+                 )
+
+match index:
+    case 0: # "up"
+        condition = np.argmin(np.abs(bezier_path[0] - width))
+    case 1: # "left"
+        condition = np.argmin(np.abs(bezier_path[1] - width))
+    case 2: # "right"
+        condition = np.argmin(np.abs(bezier_path[1] - n + 1 + width))
+
+x_start = np.round(bezier_path[1][condition] - width)
+y_start = np.round(bezier_path[0][condition] - width)
+
+print("start")
+print(x_start, y_start)
+print("end")
 print(x_end, y_end)
 
 # Визуализация
 plt.imshow(res, cmap='gray')
 plt.title("Дорога с кривой Безье")
-plt.savefig("обр.png")
+plt.show()
