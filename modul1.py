@@ -19,7 +19,6 @@ def get_square(width, k):
     
     mask = np.zeros((2 * width, 2 * width))
     b = get_biases(width, k)
-    # print(b)
     
     for x in range(2 * width):
         mask[x, :] = ((k * x + b[0] < np.arange(2 * width)) & (k * x + b[1] > np.arange(2 * width))).astype("int") 
